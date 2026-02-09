@@ -52,11 +52,11 @@ const METHODS_WITH_FORCED_BODY = ['post', 'put', 'patch'];
  * Returns default request data for a given operation.
  */
 export const getReqDataDefaults = memoizee(
-  (apiSpec: ApiSpecReader, operation?: OperationMetadata, deployment?: ApiDeployment): HttpReqData => {
+  (apiSpec: ApiSpecReader, operation?: OperationMetadata, deployment?: ApiDeployment, versionName?: string): HttpReqData => {
     const metadata = apiSpec.getRequestMetadata(operation.name);
 
     const result: HttpReqData = {
-      urlTemplate: resolveOpUrlTemplate(operation, deployment),
+      urlTemplate: resolveOpUrlTemplate(operation, deployment, versionName),
       method: operation.method,
       urlParams: [],
       query: [],
