@@ -32,6 +32,10 @@ export const ApiSpec: React.FC = () => {
     (definitionSelection: ApiDefinitionSelection) => {
       setDeployment(definitionSelection.deployment);
 
+      if (!definitionSelection.version || !definitionSelection.definition) {
+        return;
+      }
+
       if (
         definitionSelection.version.name === definitionId.versionName &&
         definitionSelection.definition.name === definitionId.definitionName
