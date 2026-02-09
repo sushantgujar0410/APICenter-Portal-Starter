@@ -1,6 +1,7 @@
 import { useRecoilValue } from 'recoil';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { ApiMetadata } from '@/types/api';
+import { PaginatedResult } from '@/types/services/IApiService';
 import { ActiveFilterData } from '@/types/apiFilters';
 import { SortBy, SortByOrder } from '@/types/sorting';
 import { apiListSortingAtom } from '@/atoms/apiListSortingAtom';
@@ -37,24 +38,37 @@ function sortApis(apis: ApiMetadata[], sortBy?: SortBy): ApiMetadata[] {
 }
 
 /**
- * Provides a list of APIs based on search and filters
+ * Provides a paginated list of APIs based on search and filters
  */
 export function useApis({ search, filters, isAutoCompleteMode, isSemanticSearch }: Props = {}) {
   const isAuthenticated = useRecoilValue(isAuthenticatedAtom);
   const ApiService = useApiService();
   const sortBy = useRecoilValue(apiListSortingAtom);
 
-  return useQuery<ApiMetadata[] | undefined>({
+  const query = useInfiniteQuery<PaginatedResult<ApiMetadata>>({
     queryKey: [QueryKeys.Apis, search, filters, isAutoCompleteMode, isSemanticSearch],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       if (isAutoCompleteMode && (!search || isSemanticSearch)) {
-        return [];
+        return { value: [] };
       }
 
-      const apis = await ApiService.getApis(search, filters, isSemanticSearch);
-      return sortApis(apis, sortBy);
+      if (pageParam) {
+        return await ApiService.getApisByNextLink(pageParam as string);
+      }
+
+      return await ApiService.getApis(search, filters, isSemanticSearch);
     },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextLink,
     staleTime: Infinity,
     enabled: isAuthenticated,
   });
+
+  const data = query.data?.pages.flatMap((page) => page.value);
+  const sortedData = data ? sortApis(data, sortBy) : undefined;
+
+  return {
+    ...query,
+    data: sortedData,
+  };
 }

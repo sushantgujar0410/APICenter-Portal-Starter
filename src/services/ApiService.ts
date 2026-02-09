@@ -8,13 +8,15 @@ import { ApiDeployment } from '@/types/apiDeployment';
 import { ApiEnvironment } from '@/types/apiEnvironment';
 import { ActiveFilterData } from '@/types/apiFilters';
 import { ApiVersion } from '@/types/apiVersion';
-import { IApiService } from '@/types/services/IApiService';
+import { IApiService, PaginatedResult } from '@/types/services/IApiService';
 import { Server } from '@/types/server';
 import { MetadataSchema } from '@/types/metadataSchema';
+import { DEFAULT_PAGE_SIZE } from '@/constants';
 
 export const ApiService: IApiService = {
-  async getApis(search: string, filters: ActiveFilterData[] = [], isSemanticSearch?: boolean): Promise<ApiMetadata[]> {
+  async getApis(search: string, filters: ActiveFilterData[] = [], isSemanticSearch?: boolean): Promise<PaginatedResult<ApiMetadata>> {
     const searchParams = new URLSearchParams();
+    searchParams.set('$top', String(DEFAULT_PAGE_SIZE));
     if (search.length && !isSemanticSearch) {
       searchParams.set('$search', search);
     }
@@ -32,15 +34,20 @@ export const ApiService: IApiService = {
     }
 
     if (search.length && isSemanticSearch) {
-      const response = await HttpService.post<{ value: ApiMetadata[] }>(`:search?${searchParams.toString()}`, {
+      const response = await HttpService.post<{ value: ApiMetadata[]; nextLink?: string }>(`:search?${searchParams.toString()}`, {
         query: search,
         searchType: 'vector',
       });
-      return response.value || [];
+      return { value: response.value || [], nextLink: response.nextLink };
     }
 
-    const response = await HttpService.get<{ value: ApiMetadata[] }>(`/apis?${searchParams.toString()}`);
-    return response.value || [];
+    const response = await HttpService.get<{ value: ApiMetadata[]; nextLink?: string }>(`/apis?${searchParams.toString()}`);
+    return { value: response.value || [], nextLink: response.nextLink };
+  },
+
+  async getApisByNextLink(nextLink: string): Promise<PaginatedResult<ApiMetadata>> {
+    const response = await HttpService.getByUrl<{ value: ApiMetadata[]; nextLink?: string }>(nextLink);
+    return { value: response.value || [], nextLink: response.nextLink };
   },
 
   async getApi(name: string): Promise<ApiMetadata> {
@@ -52,18 +59,18 @@ export const ApiService: IApiService = {
   },
 
   async getVersions(apiName: string): Promise<ApiVersion[]> {
-    const response = await HttpService.get<{ value: ApiVersion[] }>(`/apis/${apiName}/versions`);
+    const response = await HttpService.get<{ value: ApiVersion[] }>(`/apis/${apiName}/versions?$top=${DEFAULT_PAGE_SIZE}`);
     return response.value || [];
   },
 
   async getDeployments(apiName: string): Promise<ApiDeployment[]> {
-    const response = await HttpService.get<{ value: ApiDeployment[] }>(`/apis/${apiName}/deployments`);
+    const response = await HttpService.get<{ value: ApiDeployment[] }>(`/apis/${apiName}/deployments?$top=${DEFAULT_PAGE_SIZE}`);
     return response.value || [];
   },
 
   async getDefinitions(apiName: string, version: string): Promise<ApiDefinition[]> {
     const response = await HttpService.get<{ value: ApiDefinition[] }>(
-      `/apis/${apiName}/versions/${version}/definitions`
+      `/apis/${apiName}/versions/${version}/definitions?$top=${DEFAULT_PAGE_SIZE}`
     );
     return response.value || [];
   },
@@ -92,7 +99,7 @@ export const ApiService: IApiService = {
 
   async getSecurityRequirements(definitionId: ApiDefinitionId): Promise<ApiAuthSchemeMetadata[]> {
     const response = await HttpService.get<{ value: ApiAuthSchemeMetadata[] }>(
-      `/apis/${definitionId.apiName}/versions/${definitionId.versionName}/securityRequirements`
+      `/apis/${definitionId.apiName}/versions/${definitionId.versionName}/securityRequirements?$top=${DEFAULT_PAGE_SIZE}`
     );
 
     return response?.value || [];
@@ -105,7 +112,7 @@ export const ApiService: IApiService = {
   },
 
   async getMetadataSchemas(): Promise<MetadataSchema[]> {
-    const response = await HttpService.get<MetadataSchema[]>('/metadataSchemas', { skipWorkspacePrefix: true });
+    const response = await HttpService.get<MetadataSchema[]>(`/metadataSchemas?$top=${DEFAULT_PAGE_SIZE}`, { skipWorkspacePrefix: true });
     return response || [];
   },
 };

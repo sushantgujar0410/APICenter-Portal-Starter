@@ -8,8 +8,14 @@ import { ApiAuthScheme, ApiAuthSchemeMetadata } from '@/types/apiAuth';
 import { Server } from '@/types/server';
 import { MetadataSchema } from '@/types/metadataSchema';
 
+export interface PaginatedResult<T> {
+  value: T[];
+  nextLink?: string;
+}
+
 export interface IApiService {
-  getApis(search: string, filters?: ActiveFilterData[], isSemanticSearch?: boolean): Promise<ApiMetadata[]>;
+  getApis(search: string, filters?: ActiveFilterData[], isSemanticSearch?: boolean): Promise<PaginatedResult<ApiMetadata>>;
+  getApisByNextLink(nextLink: string): Promise<PaginatedResult<ApiMetadata>>;
   getApi(id: string): Promise<ApiMetadata>;
   getServer(name: string): Promise<Server | undefined>;
   getVersions(apiId: string): Promise<ApiVersion[]>;
