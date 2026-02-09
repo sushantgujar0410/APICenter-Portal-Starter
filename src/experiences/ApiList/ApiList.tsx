@@ -40,6 +40,34 @@ export const ApiList: React.FC = () => {
     [navigate]
   );
 
+  const handleLoadMore = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      apis.fetchNextPage();
+    },
+    [apis]
+  );
+
+  function renderLoadMore() {
+    if (!apis.hasNextPage) {
+      return null;
+    }
+
+    if (apis.isFetchingNextPage) {
+      return (
+        <div className={styles.loadMore}>
+          <Spinner size="tiny" />
+        </div>
+      );
+    }
+
+    return (
+      <div className={styles.loadMore}>
+        <Link onClick={handleLoadMore}>Load more</Link>
+      </div>
+    );
+  }
+
   if (apis.isLoading) {
     return <Spinner size="small" />;
   }
@@ -50,41 +78,47 @@ export const ApiList: React.FC = () => {
 
   if (layout === Layouts.CARDS) {
     return (
-      <div className={styles.cards}>
-        {adaptedApiList.map((api) => (
-          <ApiCard key={api.name} api={api} linkProps={apiLinkPropsProvider(api)} showType />
-        ))}
-      </div>
+      <>
+        <div className={styles.cards}>
+          {adaptedApiList.map((api) => (
+            <ApiCard key={api.name} api={api} linkProps={apiLinkPropsProvider(api)} showType />
+          ))}
+        </div>
+        {renderLoadMore()}
+      </>
     );
   }
 
   return (
-    <InfoTable columnLabels={['Name', 'Summary', 'Lifecycle stage', 'Type']}>
-      {adaptedApiList.map((api) => (
-        <InfoTable.Row key={api.name}>
-          <InfoTable.Cell>
-            <Link {...apiLinkPropsProvider(api)}>{api.title}</Link>
-          </InfoTable.Cell>
-          <InfoTable.Cell>
-            <MarkdownRenderer markdown={api.description} maxLength={120} />
-          </InfoTable.Cell>
-          <InfoTable.Cell>
-            {!!api.lifecycleStage && (
-              <Badge appearance="tint" color="informative" shape="rounded">
-                {api.lifecycleStage}
-              </Badge>
-            )}
-          </InfoTable.Cell>
-          <InfoTable.Cell>
-            {api.type && (
-              <Badge appearance="tint" color="informative" shape="rounded">
-                {api.type}
-              </Badge>
-            )}
-          </InfoTable.Cell>
-        </InfoTable.Row>
-      ))}
-    </InfoTable>
+    <>
+      <InfoTable columnLabels={['Name', 'Summary', 'Lifecycle stage', 'Type']}>
+        {adaptedApiList.map((api) => (
+          <InfoTable.Row key={api.name}>
+            <InfoTable.Cell>
+              <Link {...apiLinkPropsProvider(api)}>{api.title}</Link>
+            </InfoTable.Cell>
+            <InfoTable.Cell>
+              <MarkdownRenderer markdown={api.description} maxLength={120} />
+            </InfoTable.Cell>
+            <InfoTable.Cell>
+              {!!api.lifecycleStage && (
+                <Badge appearance="tint" color="informative" shape="rounded">
+                  {api.lifecycleStage}
+                </Badge>
+              )}
+            </InfoTable.Cell>
+            <InfoTable.Cell>
+              {api.type && (
+                <Badge appearance="tint" color="informative" shape="rounded">
+                  {api.type}
+                </Badge>
+              )}
+            </InfoTable.Cell>
+          </InfoTable.Row>
+        ))}
+      </InfoTable>
+      {renderLoadMore()}
+    </>
   );
 };
 

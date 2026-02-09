@@ -1,6 +1,7 @@
 import React from 'react';
 import { ApiOperationMethod, CopyToClipboard, InfoPanel } from 'api-docs-ui';
 import { resolveOpUrlTemplate } from '@/utils/apiOperations';
+import { useApiVersions } from '@/hooks/useApiVersions';
 import { OperationTypes } from '@/types/apiSpec';
 import { OperationDetailsViewProps } from './types';
 import McpResourceOperationDetails from './McpResourceOperationDetails';
@@ -15,9 +16,11 @@ const detailsViewByType: Record<OperationTypes, DetailsViewType> = {
 };
 
 export const ApiOperationDetails: React.FC<OperationDetailsViewProps> = (props) => {
-  const { operation, deployment } = props;
+  const { definitionId, operation, deployment } = props;
 
-  const urlTemplate = resolveOpUrlTemplate(operation, deployment);
+  const apiVersions = useApiVersions(definitionId.apiName);
+  const versionTitle = apiVersions.data?.find((v) => v.name === definitionId.versionName)?.title || definitionId.versionName;
+  const urlTemplate = resolveOpUrlTemplate(operation, deployment, versionTitle);
 
   const DetailsView = detailsViewByType[operation?.type];
 

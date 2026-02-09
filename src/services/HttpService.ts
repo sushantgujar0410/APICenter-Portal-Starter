@@ -68,6 +68,35 @@ export const HttpService = {
     return makeRequestWithCache<T>(endpoint, 'GET', undefined, options);
   },
 
+  /** Fetch a fully-qualified URL (e.g. a nextLink returned by the Data API). */
+  async getByUrl<T>(url: string): Promise<T | undefined> {
+    const { AuthService } = getRecoil(appServicesAtom);
+    const accessToken = await AuthService.getAccessToken();
+
+    const init: RequestInit = {
+      method: 'GET',
+      headers: new Headers(BASE_HEADERS),
+    };
+
+    if (accessToken) {
+      (init.headers as Headers).append('Authorization', 'Bearer ' + accessToken);
+    }
+
+    const response = await fetch(url, init);
+
+    switch (response.status) {
+      case 401:
+      case 403:
+        if (accessToken) {
+          setRecoil(isAccessDeniedAtom, true);
+          return;
+        }
+        break;
+    }
+
+    return (await response.json()) as T;
+  },
+
   post<T>(endpoint: string, payload?: any): Promise<T | undefined> {
     return makeRequest<T>(endpoint, 'POST', payload);
   },
