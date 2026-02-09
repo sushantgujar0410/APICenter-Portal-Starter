@@ -6,6 +6,7 @@ export const ApiFilterParameters: Record<FilterType, FilterMetadata> = {
     options: [
       { value: 'rest', label: 'REST' },
       { value: 'mcp', label: 'MCP' },
+      { value: 'a2a', label: 'A2A' },
       { value: 'graphql', label: 'GraphQL' },
       { value: 'grpc', label: 'gRPC' },
       { value: 'soap', label: 'SOAP' },
